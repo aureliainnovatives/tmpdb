@@ -1,0 +1,31 @@
+name: MyCICD Deployment with GitOPS for ABC Project
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        run: echo "admin" | docker login -u "admin" --password-stdin
+
+      - name: Extract version from package.json
+        id: package-version
+        run: |
+          echo "VERSION=$(jq -r .version package.json)" >> $GITHUB_OUTPUT
+
+      - name: Build and Push Docker Images
+        run: |
+          docker build -t admin/gitops-node-crud:dev-latest -t admin/gitops-node-crud:v${{ steps.package-version.outputs.VERSION }} .
+          docker push admin/gitops-node-crud:dev-latest
+          docker push admin/gitops-node-crud:v${{ steps.package-version.outputs.VERSION }}
